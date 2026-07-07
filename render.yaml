@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: goldbuyersusa-server
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: server
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_NAME
+        value: GOLDBUYERSUSA
+      - key: DOMAIN
+        value: https://goldbuyersusa-server.onrender.com
+      - key: DB_DIALECT
+        value: postgres
+      - key: DB_HOST
+        value: dpg-d963rhks728c73f4hq60-a
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: goldbuyersusa_db
+      - key: DB_USERNAME
+        value: goldbuyersusa_db_user
+      - key: DB_PASSWORD
+        sync: false
+      - key: REDIS_HOST
+        value: red-d9641usvikkc73dtgiog
+      - key: REDIS_PORT
+        value: "6379"
+      - key: PUBSUB_HOST
+        value: red-d9641usvikkc73dtgiog
+      - key: PUBSUB_PORT
+        value: "6379"
+      - key: NETWORK
+        value: mainnet
+      - key: PORT
+        value: "10010"
+
+  - type: static
+    name: goldbuyersusa-web
+    region: oregon
+    branch: main
+    rootDir: web
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_EXCHANGE_NAME
+        value: GOLDBUYERSUSA
+      - key: REACT_APP_SERVER_ENDPOINT
+        value: https://goldbuyersusa-server.onrender.com
+      - key: REACT_APP_PUBLIC_URL
+        value: https://goldbuyersusa-web.onrender.com
+      - key: NODE_ENV
+        value: production
