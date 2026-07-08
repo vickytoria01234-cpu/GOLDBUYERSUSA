@@ -1,12 +1,12 @@
 'use strict';
 const env = process.env.NODE_ENV || 'development';
 
-const REDIS_HOST = process.env.REDIS_HOST;
-const REDIS_PORT = process.env.REDIS_PORT;
+const REDIS_HOST = process.env.REDIS_HOST || '127.0.0.1';
+const REDIS_PORT = process.env.REDIS_PORT || 6379;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
-const PUBSUB_HOST = process.env.PUBSUB_HOST;
-const PUBSUB_PORT = process.env.PUBSUB_PORT;
+const PUBSUB_HOST = process.env.PUBSUB_HOST || REDIS_HOST;
+const PUBSUB_PORT = process.env.PUBSUB_PORT || REDIS_PORT;
 const PUBSUB_PASSWORD = process.env.PUBSUB_PASSWORD;
 
 const redisClientConfig = {

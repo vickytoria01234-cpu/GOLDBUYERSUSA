@@ -42,7 +42,7 @@ checkStatus()
 
 		//init runs, populates configuration/secrets
 
-		const PORT = process.env.PORT || 10010;
+		const PORT = process.env.PORT || 10000;
 
 		const server = createServer(app);
 
