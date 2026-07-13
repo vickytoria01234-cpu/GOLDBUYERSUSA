@@ -30,111 +30,108 @@ const adminLargeBodyParser = (req, res, next) => {
 	return next();
 };
 
-checkStatus()
-	.then(() => {
-		logger.info(
-			'app.js Initializing API Server'
-		);
+const startServer = () => {
+	logger.info('app.js Initializing API Server');
 
-		const app = require('express')();
-		app.use(cors());
-		// listen through pubsub for configuration/init
+	const app = require('express')();
+	app.use(cors());
+	// listen through pubsub for configuration/init
 
-		//init runs, populates configuration/secrets
+	//init runs, populates configuration/secrets
 
-		const PORT = process.env.PORT || 10000;
+	const PORT = process.env.PORT || 10000;
+	const server = createServer(app);
 
-		const server = createServer(app);
+	module.exports = app; // for testing
 
-		module.exports = app; // for testing
+	app.use(logEntryRequest);
+	app.use(domainMiddleware);
+	helmletMiddleware(app);
 
-		app.use(logEntryRequest);
-		app.use(domainMiddleware);
-		helmetMiddleware(app);
+	const morganType = process.env.NODE_ENV === 'development' ? 'dev' : 'combined';
+	app.use(morgan(morganType, { stream }));
 
-		const morganType = process.env.NODE_ENV === 'development' ? 'dev' : 'combined';
-		app.use(morgan(morganType, { stream }));
+	const options = {
+		customCss: CUSTOM_CSS,
+		customSiteTitle: 'API Explorer'
+	};
 
+	app.get('/', (req, res) => {
+		res.redirect('/v2/health');
+	});
 
+	app.use(`${swaggerDoc.basePath}/admin`, adminLargeBodyParser);
 
-		const options = {
-			customCss: CUSTOM_CSS,
-			customSiteTitle: 'API Explorer'
-		};
-
-		app.get('/', (req, res) => {
-			res.redirect('/v2/health');
+	const initializeSwaggerSecurity = (middleware) => {
+		return middleware.swaggerSecurity({
+			Token: toolsLib.security.verifyAuthTokenMiddleware
 		});
+	};
 
-		app.use(`${swaggerDoc.basePath}/admin`, adminLargeBodyParser);
+	swaggerTools.initializeMiddleware(swaggerDoc, function (middleware) {
+		app.use(middleware.swaggerMetadata());
+		if (process.env.NODE_ENV !== 'test') {
+			rateLimitMiddleware(app);
+		}
+		app.use(initializeSwaggerSecurity(middleware));
 
-		const initializeSwaggerSecurity = (middleware) => {
-			return middleware.swaggerSecurity({
-				Token: toolsLib.security.verifyAuthTokenMiddleware
-			});
-		};
+		app.use(middleware.swaggerValidator({ validateResponse: true }));
+		app.use(middleware.swaggerRouter({
+			useStubs: true, controllers: './api/controllers'
+		}));
 
-		swaggerTools.initializeMiddleware(swaggerDoc, function (middleware) {
-
-			app.use(middleware.swaggerMetadata());
-			if (process.env.NODE_ENV !== 'test') {
-				rateLimitMiddleware(app);
-			}
-			app.use(initializeSwaggerSecurity(middleware));
-
-			app.use(middleware.swaggerValidator({ validateResponse: true }));
-			app.use(middleware.swaggerRouter({
-				useStubs: true, controllers: './api/controllers'
-			}));
-
-			// // swaggerDoc.host = API_HOST;
-			if (process.env.NODE_ENV === 'production') {
-				swaggerDoc.schemes = ['https'];
-				Object.entries(swaggerDoc.paths).forEach(([path, pathContent], index) => {
-					Object.keys(pathContent).forEach((method) => {
-						if (method.indexOf('swagger') === -1) {
-							if (Object.prototype.hasOwnProperty.call(pathContent[method], 'tags')) {
-								const tags = pathContent[method].tags;
-								const index = tags.findIndex((value) => value === 'Admin' || value === 'Notification');
-								if (index > -1) {
-									delete pathContent[method];
-								}
+		// // swaggerDoc.host = API_HOST;
+		if (process.env.NODE_ENV === 'production') {
+			swaggerDoc.schemes = ['https'];
+			Object.entries(swaggerDoc.paths).forEach(([path, pathContent], index) => {
+				Object.keys(pathContent).forEach((method) => {
+					if (method.indexOf('swagger') === -1) {
+						if (Object.prototype.hasOwnProperty.call(pathContent[method], 'tags')) {
+							const tags = pathContent[method].tags;
+							const index = tags.findIndex((value) => value === 'Admin' || value === 'Notification');
+							if (index > -1) {
+								delete pathContent[method];
 							}
 						}
-					});
+					}
 				});
+			});
+		}
+
+		// Custom error handler that logs full error server-side
+		// and returns only a sanitized message to the client.
+		app.use(function (err, req, res, next) {
+			logger.error(
+				'app/errorHandler',
+				req && req.uuid,
+				req && req.method,
+				req && req.originalUrl,
+				err
+			);
+
+			let message = 'Internal server error';
+			if (err && typeof err.message === 'string' && err.message) {
+				message = err.message;
+			} else if (typeof err === 'string') {
+				message = err;
 			}
 
-			// Custom error handler that logs full error server-side
-			// and returns only a sanitized message to the client.
-			app.use(function (err, req, res, next) {
-				logger.error(
-					'app/errorHandler',
-					req && req.uuid,
-					req && req.method,
-					req && req.originalUrl,
-					err
-				);
-
-				let message = 'Internal server error';
-				if (err && typeof err.message === 'string' && err.message) {
-					message = err.message;
-				} else if (typeof err === 'string') {
-					message = err;
-				}
-
-				res.statusCode = 500;
-				res.json({ message });
-			});
-
-
-			app.use('/api/explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
-			app.use('/api-explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
-
-			server.listen(PORT, () => {
-				logger.info(`Server running on port: ${PORT}`);
-			});
+			res.statusCode = 500;
+			res.json({ message });
 		});
+
+		app.use('/api/explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
+		app.use('/api-explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
+
+		server.listen(PORT, () => {
+			logger.info(`Server running on port: ${PORT}`);
+		});
+	});
+};
+
+checkStatus()
+	.then(() => {
+		startServer();
 	})
 	.catch((err) => {
 		let message = 'API Initialization failed';
@@ -145,5 +142,18 @@ checkStatus()
 			message = err.error.message;
 		}
 		logger.error('app/checkStatus Error ', message);
+
+		if (
+			message === 'Exchange is not initialized yet' ||
+			message === 'Exchange is locked' ||
+			message === 'Exchange activation code is not set' ||
+			message === 'Exchange keys are not set.' ||
+			message === 'Exchange is expired'
+		) {
+			logger.warn('app/checkStatus continuing with server startup despite initialization error');
+			startServer();
+			return;
+		}
+
 		setTimeout(() => { process.exit(1); }, 60 * 1000 * 5);
 	});
