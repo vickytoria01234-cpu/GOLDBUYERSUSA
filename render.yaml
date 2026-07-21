@@ -49,12 +49,14 @@ services:
     region: oregon
     branch: main
     rootDir: web
-    buildCommand: npm ci && CI=false npx craco build --max_old_space_size=4096
+    buildCommand: npm ci --legacy-peer-deps --production=false && CI=false npx craco build --max_old_space_size=4096
     staticPublishPath: build
     envVars:
       - key: NODE_VERSION
         value: "20.19.0"
       - key: CI
+        value: "false"
+      - key: NPM_CONFIG_PRODUCTION
         value: "false"
       - key: REACT_APP_EXCHANGE_NAME
         value: GOLDBUYERSUSA
