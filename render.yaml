@@ -7,7 +7,7 @@ services:
     rootDir: server
     runtime: node
     buildCommand: npm install --legacy-peer-deps
-    startCommand: npm start
+    startCommand: node app.js
     envVars:
       - key: NODE_VERSION
         value: "20.19.0"
@@ -45,11 +45,11 @@ services:
     region: oregon
     branch: main
     rootDir: web
-    buildCommand: npm ci --prefer-offline=false && npm run build
+    buildCommand: npm ci && CI=false npx craco build --max_old_space_size=4096
     staticPublishPath: build
     envVars:
       - key: NODE_VERSION
-        value: "18.20.4"
+        value: "20.19.0"
       - key: CI
         value: "false"
       - key: REACT_APP_EXCHANGE_NAME
