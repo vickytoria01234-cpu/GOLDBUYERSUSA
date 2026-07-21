@@ -46,7 +46,6 @@ const startServer = () => {
 
 	app.use(logEntryRequest);
 	app.use(domainMiddleware);
-	helmletMiddleware(app);
 
 	const morganType = process.env.NODE_ENV === 'development' ? 'dev' : 'combined';
 	app.use(morgan(morganType, { stream }));
