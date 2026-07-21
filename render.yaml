@@ -33,10 +33,14 @@ services:
         value: red-d9641usvikkc73dtgiog
       - key: REDIS_PORT
         value: "6379"
+      - key: REDIS_PASSWORD
+        value: kd3LBK2MPv6y7Rd7TMgz4Sbfc3YhYTKP
       - key: PUBSUB_HOST
         value: red-d9641usvikkc73dtgiog
       - key: PUBSUB_PORT
         value: "6379"
+      - key: PUBSUB_PASSWORD
+        value: kd3LBK2MPv6y7Rd7TMgz4Sbfc3YhYTKP
       - key: NETWORK
         value: mainnet
 
