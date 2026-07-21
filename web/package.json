@@ -108,7 +108,8 @@
 		"surge": "0.21.6"
 	},
 	"overrides": {
-		"ua-parser-js": "0.7.40"
+		"ua-parser-js": "0.7.40",
+		"classnames": "2.3.1"
 	},
 	"resolutions": {
 		"ua-parser-js": "0.7.40"
