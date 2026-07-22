@@ -14,7 +14,7 @@
 		"array-move": "3.0.1",
 		"awesome-phonenumber": "2.64.0",
 		"axios": "0.30.2",
-		"classnames": "2.2.6",
+		"classnames": "2.3.1",
 		"color": "3.1.3",
 		"core-js": "3.6.5",
 		"country-data": "0.0.31",
@@ -108,8 +108,7 @@
 		"surge": "0.21.6"
 	},
 	"overrides": {
-		"ua-parser-js": "0.7.40",
-		"classnames": "2.3.1"
+		"ua-parser-js": "0.7.40"
 	},
 	"resolutions": {
 		"ua-parser-js": "0.7.40"
