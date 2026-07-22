@@ -40,12 +40,20 @@ const startServer = () => {
 	//init runs, populates configuration/secrets
 
 	const PORT = process.env.PORT || 10000;
+	const HOST = process.env.HOST || '0.0.0.0';
 	const server = createServer(app);
 
 	module.exports = app; // for testing
 
 	app.use(logEntryRequest);
 	app.use(domainMiddleware);
+
+	// Bind the port immediately so the platform's health-check port scanner
+	// succeeds even if swagger-tools initialization is slow or fails on a
+	// newer Node version. Swagger middleware is attached asynchronously below.
+	server.listen(PORT, HOST, () => {
+		logger.info(`Server running on port: ${PORT}`);
+	});
 
 	const morganType = process.env.NODE_ENV === 'development' ? 'dev' : 'combined';
 	app.use(morgan(morganType, { stream }));
@@ -121,11 +129,10 @@ const startServer = () => {
 
 		app.use('/api/explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
 		app.use('/api-explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
-
-		server.listen(PORT, () => {
-			logger.info(`Server running on port: ${PORT}`);
-		});
 	});
+
+	// Note: the HTTP server is already listening (see above). Swagger middleware
+	// is attached here without gating the port binding.
 };
 
 checkStatus()
