@@ -123,7 +123,7 @@
 		"start-js": "react-scripts --max_old_space_size=4096 start",
 		"start": "npm install && npm-run-all -p watch-css start-js",
 		"dev:plugin": "REACT_APP_PLUGIN_DEV_MODE=true REACT_APP_PLUGIN=$npm_config_plugin npm run start",
-		"build": "craco --max_old_space_size=4096 build",
+		"build": "node --openssl-legacy-provider --max_old_space_size=4096 node_modules/@craco/craco/bin/craco.js build",
 		"pre-build": "npm run remove-build && npm install",
 		"build:demo": "REACT_APP_SERVER_ENDPOINT=https://api.sandbox.hollaex.com npm run build",
 		"publish:demo": "surge build",
