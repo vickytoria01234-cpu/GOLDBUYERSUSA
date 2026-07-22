@@ -26,7 +26,8 @@ client.on('connect', () => {
 client.on('error', (err) => {
 	if (loggerRedis) loggerRedis.error('REDIS', err.message);
 	if (loggerRedis) loggerRedis.error(err);
-	process.exit(0);
+	// Do NOT exit — allow the HTTP server to keep serving health checks
+	// even if Redis is temporarily unavailable.
 });
 
 
