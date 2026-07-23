@@ -202,7 +202,13 @@ const helmetMiddleware = (app) => {
 };
 
 const rateLimitMiddleware = (app) => {
-	var limiter = require('express-limiter')(app, redis);
+	try {
+		var limiter = require('express-limiter')(app, redis);
+	} catch (e) {
+		logger.error('config/middleware/rateLimitMiddleware express-limiter init failed', e && e.message ? e.message : e);
+		logger.warn('config/middleware/rateLimitMiddleware skipping rate limiting; Redis may be unavailable');
+		return;
+	}
 
 	// Per-user (or per-IP) per-plugin-endpoint limiter. Uses a synchronous
 	// JWT verify so we don't pay an async round-trip on every plugin request
