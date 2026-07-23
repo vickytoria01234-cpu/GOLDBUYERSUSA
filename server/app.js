@@ -1,5 +1,15 @@
 'use strict';
 
+// Global crash-protectors: never let an uncaught error kill the process during
+// deploy. Render's health check needs the port to stay bound.
+process.on('uncaughtException', (err) => {
+	console.error('[uncaughtException]', err && err.message ? err.message : err);
+	if (err && err.stack) console.error(err.stack);
+});
+process.on('unhandledRejection', (reason) => {
+	console.error('[unhandledRejection]', reason && reason.message ? reason.message : reason);
+});
+
 const { createServer } = require('http');
 const swaggerUi = require('swagger-ui-express');
 const morgan = require('morgan');
