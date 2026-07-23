@@ -75,8 +75,9 @@ const startServer = () => {
 		});
 	};
 
-	swaggerTools.initializeMiddleware(swaggerDoc, function (middleware) {
-		app.use(middleware.swaggerMetadata());
+	try {
+		swaggerTools.initializeMiddleware(swaggerDoc, function (middleware) {
+			app.use(middleware.swaggerMetadata());
 		if (process.env.NODE_ENV !== 'test') {
 			rateLimitMiddleware(app);
 		}
@@ -130,16 +131,20 @@ const startServer = () => {
 		app.use('/api/explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
 		app.use('/api-explorer', swaggerUi.serve, swaggerUi.setup(swaggerDoc, options));
 		});
+	} catch (swaggerErr) {
+		logger.error('app/swaggerTools initializeMiddleware error', swaggerErr && swaggerErr.message ? swaggerErr.message : swaggerErr);
+		logger.warn('app/swaggerTools server continues without swagger middleware; API routes may be unavailable');
+	}
 
-		// Note: the HTTP server is already listening (see above, before the swagger
-		// middleware setup). Binding first guarantees the platform's health-check
-		// port scanner succeeds even if initialization or swagger-tools misbehaves.
-		};
+	// Note: the HTTP server is already listening (see above, before the swagger
+	// middleware setup). Binding first guarantees the platform's health-check
+	// port scanner succeeds even if initialization or swagger-tools misbehaves.
+	};
 
-		// Start the HTTP server immediately and unconditionally so the deployment's
-		// port health-check passes. Initialization (checkStatus) runs as a side effect
-		// and only governs runtime behaviour, never whether the port is bound.
-		startServer();
+	// Start the HTTP server immediately and unconditionally so the deployment's
+	// port health-check passes. Initialization (checkStatus) runs as a side effect
+	// and only governs runtime behaviour, never whether the port is bound.
+	startServer();
 
 		checkStatus()
 		.then(() => {
