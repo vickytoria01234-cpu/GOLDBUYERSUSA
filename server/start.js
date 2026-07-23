@@ -67,6 +67,12 @@ app.get('/', (req, res) => {
 	res.redirect('/v2/health');
 });
 
+// Catch-all: return JSON for any unmatched /v2/* route so the frontend
+// doesn't crash trying to parse HTML 404 pages as JSON.
+app.use('/v2/*', (req, res) => {
+	res.json({ message: 'Not configured', initialized: false });
+});
+
 const server = http.createServer(app);
 
 server.listen(PORT, HOST, () => {
