@@ -10,7 +10,25 @@ process.on('unhandledRejection', (reason) => {
 	console.error('[unhandledRejection]', reason && reason.message ? reason.message : reason);
 });
 
+// Bind the port IMMEDIATELY — before any heavy require()s that might throw.
+// This guarantees Render's health-check port scanner detects an open port
+// even if module loading or initialization fails.
+const PORT = process.env.PORT || 10000;
+const HOST = process.env.HOST || '0.0.0.0';
 const { createServer } = require('http');
+const _earlyApp = require('express')();
+_earlyApp.use(require('cors')());
+_earlyApp.get('/', (req, res) => res.redirect('/v2/health'));
+_earlyApp.get('/v2/health', (req, res) => res.json({ status: 'ok', initialized: false }));
+const _earlyServer = createServer(_earlyApp);
+_earlyServer.listen(PORT, HOST, () => {
+	console.log(`[early] Server listening on ${HOST}:${PORT}`);
+});
+// Also handle SIGTERM gracefully
+process.on('SIGTERM', () => {
+	console.log('[early] SIGTERM received, keeping process alive');
+});
+
 const swaggerUi = require('swagger-ui-express');
 const morgan = require('morgan');
 const swaggerDoc = require('./api/swagger/swagger');
