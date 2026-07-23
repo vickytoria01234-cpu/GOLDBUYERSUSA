@@ -478,11 +478,10 @@ const checkStatus = () => {
 			return networkNodeLib;
 		})
 		.catch((err) => {
-			loggerInit.error('init/checkStatus/catch error', err.message);
-			setTimeout(() => {
-				process.exit(1);
-			}, 60000);
-		});
+				loggerInit.error('init/checkStatus/catch error', err.message);
+				// Do NOT schedule process.exit — the HTTP server must stay alive
+				// for Render's health check even when the exchange is not initialized.
+			});
 };
 
 const stop = () => {
