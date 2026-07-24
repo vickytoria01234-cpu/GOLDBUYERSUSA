@@ -25,19 +25,26 @@ app.use(cors());
 
 // Default kit config (serves the frontend even when exchange is uninitialized)
 const DEFAULT_KIT = {
-	info: {
-		name: 'GOLDBUYERSUSA',
-		active: true,
-		type: '',
-		dark: true,
-		version: '2.19.0',
-		description: 'Gold Buyers USA Exchange'
+	coins: {},
+	pairs: {},
+	tiers: {},
+	valuations_assets: {},
+	kit: {
+		info: {
+			name: 'GOLDBUYERSUSA',
+			active: true,
+			type: '',
+			dark: true,
+			version: '2.19.0',
+			description: 'Gold Buyers USA Exchange'
+		},
+		color: {
+			primary: '#ffffff',
+			secondary: '#ffffff',
+			background: '#1a1a1a'
+		}
 	},
-	color: {
-		primary: '#ffffff',
-		secondary: '#ffffff',
-		background: '#1a1a1a'
-	},
+	sections: {},
 	interface: {},
 	icons: {},
 	strings: {},
