@@ -29,20 +29,19 @@ const DEFAULT_KIT = {
 	pairs: {},
 	tiers: {},
 	valuations_assets: {},
-	kit: {
-		info: {
-			name: 'GOLDBUYERSUSA',
-			active: true,
-			type: '',
-			dark: true,
-			version: '2.19.0',
-			description: 'Gold Buyers USA Exchange'
-		},
-		color: {
-			primary: '#ffffff',
-			secondary: '#ffffff',
-			background: '#1a1a1a'
-		}
+	info: {
+		name: 'GOLDBUYERSUSA',
+		active: true,
+		type: '',
+		dark: true,
+		version: '2.19.0',
+		description: 'Gold Buyers USA Exchange',
+		initialized: false
+	},
+	color: {
+		primary: '#ffffff',
+		secondary: '#ffffff',
+		background: '#1a1a1a'
 	},
 	sections: {},
 	interface: {},
