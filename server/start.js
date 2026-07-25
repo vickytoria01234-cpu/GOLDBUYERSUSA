@@ -145,6 +145,39 @@ app.get('/v2/announcements', (req, res) => {
 	res.json({ data: [] });
 });
 
+// Tickers (hit by getTickers in web/src/actions/appActions.js:480; reducer spreads payload as object).
+app.get('/v2/ticker/all', (req, res) => {
+	res.json({});
+});
+
+// Tiers (hit by requestTiers in appActions.js:739; reducer stores payload as config_level object).
+app.get('/v2/tiers', (req, res) => {
+	res.json({});
+});
+
+// Sparkline charts (hit by getSparklines in chartAction.js:65; uses Object.entries(data).forEach).
+// MUST be an object keyed by pair — never an array or null.
+app.get('/v2/charts', (req, res) => {
+	res.json({});
+});
+
+// Oracle prices (hit by getPrices in assetActions.js:41; uses Object.keys(prices)).
+app.get('/v2/oracle/prices', (req, res) => {
+	res.json({});
+});
+
+// Mini charts (hit by getMiniCharts in chartAction.js:122; uses Object.keys(data).forEach).
+// MUST be an object keyed by symbol — never an array or null.
+app.get('/v2/minicharts', (req, res) => {
+	res.json({});
+});
+
+// User logins (hit by getUserLogins in userAction.js:351; action reads body.data.count directly
+// and reducer calls .concat(payload.data) — MUST contain count (number) and data (array)).
+app.get('/v2/user/logins', (req, res) => {
+	res.json({ count: 0, data: [] });
+});
+
 // Admin signup - the Init wizard's step 4 calls POST /v2/admin/signup with
 // { email, password }. On success it returns 201 { message: 'Success' } and
 // the real server flips Status.initialized = true. We replicate that here
