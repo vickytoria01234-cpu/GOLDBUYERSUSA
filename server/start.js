@@ -70,6 +70,9 @@ const DEFAULT_KIT = {
 // so it MUST contain `pairs`, `coins`, `icons`, `api_name`, etc. as objects.
 // Returning {message:'Not configured'} here crashed the frontend with
 // "Cannot convert undefined or null to object" from Object.keys(undefined).
+// NOTE on array vs object types: the frontend reducers (utils/reducer.js
+// modifyBrokerData/modifyQuickTradeData) call .forEach on `broker` and
+// `quicktrade`, so those MUST be arrays, not objects/booleans.
 const DEFAULT_CONSTANTS = {
 	api_name: 'GOLDBUYERSUSA',
 	coins: {},
@@ -78,10 +81,10 @@ const DEFAULT_CONSTANTS = {
 	tiers: {},
 	valuation_assets: {},
 	transactionLimits: {},
-	broker: false,
-	quicktrade: {},
+	broker: [],
+	quicktrade: [],
 	fiat: {},
-	user_payments: {}
+	user_payments: []
 };
 
 app.get('/v2/health', (req, res) => {

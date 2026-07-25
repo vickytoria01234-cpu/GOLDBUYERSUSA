@@ -41,6 +41,9 @@ export const modifyPairsData = (pairs, coins) => {
 };
 
 export const modifyBrokerData = (broker, coins) => {
+	if (!Array.isArray(broker)) {
+		return broker;
+	}
 	broker.forEach((data) => {
 		const { symbol = '' } = data;
 		const [pair_base, pair_2] = symbol?.split('-');
@@ -57,6 +60,9 @@ export const modifyBrokerData = (broker, coins) => {
 };
 
 export const modifyQuickTradeData = (quicktrade, coins) => {
+	if (!Array.isArray(quicktrade)) {
+		return quicktrade;
+	}
 	quicktrade.forEach((data) => {
 		const { symbol = '' } = data;
 		const [pair_base, pair_2] = symbol?.split('-');
