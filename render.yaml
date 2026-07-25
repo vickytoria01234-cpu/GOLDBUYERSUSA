@@ -7,7 +7,7 @@ services:
     rootDir: server
     runtime: node
     buildCommand: npm install --legacy-peer-deps
-    startCommand: node app.js
+    startCommand: node start.js
     envVars:
       - key: NODE_VERSION
         value: "20.19.0"
