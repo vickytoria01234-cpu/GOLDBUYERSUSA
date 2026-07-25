@@ -16,6 +16,7 @@ process.on('unhandledRejection', (reason) => {
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 10000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -178,6 +179,31 @@ app.get('/v2/user/logins', (req, res) => {
 	res.json({ count: 0, data: [] });
 });
 
+// Admin role (hit by Roles/action.js:28; frontend does response.data.map — MUST be an array).
+app.get('/v2/admin/role', (req, res) => {
+	res.json({ data: [] });
+});
+
+// User profile (hit by userAction.js:15; guarded by value.data.id check).
+app.get('/v2/user', (req, res) => {
+	res.json({ id: null });
+});
+
+// Admin exchange (hit by AdminFinancials/action.js:68; consumer reads exchange.id).
+app.get('/v2/admin/exchange', (req, res) => {
+	res.json({ id: null, coins: [], name: '' });
+});
+
+// Admin coins/network (hit by AdminFinancials/action.js:44; AppWrapper:340 reads res.data.data).
+app.get('/v2/admin/coins/network', (req, res) => {
+	res.json({ data: [] });
+});
+
+// Admin pairs/network (hit by AdminFinancials/action.js:48; AppWrapper:350 reads res.data.data).
+app.get('/v2/admin/pairs/network', (req, res) => {
+	res.json({ data: [] });
+});
+
 // Admin signup - the Init wizard's step 4 calls POST /v2/admin/signup with
 // { email, password }. On success it returns 201 { message: 'Success' } and
 // the real server flips Status.initialized = true. We replicate that here
@@ -239,4 +265,34 @@ const server = http.createServer(app);
 
 server.listen(PORT, HOST, () => {
 	console.log(`[start] Server listening on ${HOST}:${PORT}`);
+});
+
+// ----------------------------------------------------------------------------
+// WebSocket /stream — accepts connections, replies to heartbeat pings, sends
+// no real data. Prevents the frontend's Socket.js from endlessly reconnecting
+// and spamming console with 404 errors. The client sends
+// {"op":"ping"} via ws-heartbeat; we reply {"op":"pong"} to keep the socket alive.
+// ----------------------------------------------------------------------------
+const wss = new WebSocketServer({ noServer: true });
+
+server.on('upgrade', (request, socket, head) => {
+	const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+	if (pathname === '/stream') {
+		wss.handleUpgrade(request, socket, head, (ws) => {
+			wss.emit('connection', ws, request);
+		});
+	} else {
+		socket.destroy();
+	}
+});
+
+wss.on('connection', (ws) => {
+	ws.on('message', (raw) => {
+		try {
+			const msg = JSON.parse(raw);
+			if (msg.op === 'ping') {
+				ws.send(JSON.stringify({ op: 'pong' }));
+			}
+		} catch (_) {}
+	});
 });
