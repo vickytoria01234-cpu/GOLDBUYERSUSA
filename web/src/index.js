@@ -195,50 +195,60 @@ const getConfigs = async () => {
 	});
 
 	const { data: constants = {} } = await requestConstant();
+	// Defensive: ensure every key the rest of getConfigs destructures is an
+	// object. The real /v2/constants endpoint should always return these, but
+	// a malformed/stub response (e.g. { message: 'Not configured' }) previously
+	// crashed init at Object.keys(constants.pairs) with
+	// "Cannot convert undefined or null to object".
+	const safePairs = constants.pairs || {};
+	const safeCoins = constants.coins || {};
+	const safeValuationAssets = constants.valuation_assets || {};
+	const safeIcons = constants.icons || {};
+	const safeTransactionLimits = constants.transactionLimits || {};
 	// Merge display-only valuation currencies into the icon source so their logos
 	// resolve in the `icons` config map (keyed by SYMBOL_ICON), without adding them
 	// to the tradeable `coins` list.
 	const coin_icons = {
-		...(constants.coins || {}),
-		...(constants.valuation_assets || {}),
+		...safeCoins,
+		...safeValuationAssets,
 	};
 	const {
 		app: { pair },
 	} = store.getState();
 
 	if (!pair) {
-		const initialPair = Object.keys(constants.pairs)[0];
+		const initialPair = Object.keys(safePairs)[0];
 		store.dispatch(changePair(initialPair));
 	}
 
-	store.dispatch(setCurrencies(constants.coins));
-	store.dispatch(setValuationCurrencies(constants.valuation_assets));
-	setValuationCoinsCache(constants.valuation_assets);
-	store.dispatch(setUserPayments(kitData.user_payments));
-	store.dispatch(setOnramp(kitData.onramp));
-	store.dispatch(setOfframp(kitData.offramp));
-	store.dispatch(setPairs(constants.pairs));
-	store.dispatch(setPairsData(constants.pairs));
-	store.dispatch(setContracts(getContracts(constants.coins)));
+	store.dispatch(setCurrencies(safeCoins));
+	store.dispatch(setValuationCurrencies(safeValuationAssets));
+	setValuationCoinsCache(safeValuationAssets);
+	store.dispatch(setUserPayments(kitData.user_payments || {}));
+	store.dispatch(setOnramp(kitData.onramp || {}));
+	store.dispatch(setOfframp(kitData.offramp || {}));
+	store.dispatch(setPairs(safePairs));
+	store.dispatch(setPairsData(safePairs));
+	store.dispatch(setContracts(getContracts(safeCoins)));
 	store.dispatch(setAllContracts(constants));
 	store.dispatch(setBroker(constants.broker));
-	store.dispatch(setQuickTrade(constants.quicktrade));
-	store.dispatch(setTransactionLimits(constants.transactionLimits));
+	store.dispatch(setQuickTrade(constants.quicktrade || {}));
+	store.dispatch(setTransactionLimits(safeTransactionLimits));
 	// store.dispatch(setPricesAndAsset({}, constants.coins));
 	store.dispatch(setExchangeTimeZone(timezone));
 
 	const orderLimits = {};
-	Object.keys(constants.pairs).forEach((pair) => {
-		orderLimits[pair] = {
+	Object.keys(safePairs).forEach((pairName) => {
+		orderLimits[pairName] = {
 			PRICE: {
-				MIN: constants.pairs[pair].min_price,
-				MAX: constants.pairs[pair].max_price,
-				STEP: constants.pairs[pair].increment_price,
+				MIN: safePairs[pairName].min_price,
+				MAX: safePairs[pairName].max_price,
+				STEP: safePairs[pairName].increment_price,
 			},
 			SIZE: {
-				MIN: constants.pairs[pair].min_size,
-				MAX: constants.pairs[pair].max_size,
-				STEP: constants.pairs[pair].increment_price,
+				MIN: safePairs[pairName].min_size,
+				MAX: safePairs[pairName].max_size,
+				STEP: safePairs[pairName].increment_price,
 			},
 		};
 	});
