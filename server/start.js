@@ -215,7 +215,8 @@ app.get('/v2/ticker/all', (req, res) => {
 		const close = +(base * (0.97 + Math.random() * 0.04)).toFixed(pair === 'xht-usdt' ? 4 : 2);
 		const high = +(Math.max(open, close) * (1 + Math.random() * 0.015)).toFixed(pair === 'xht-usdt' ? 4 : 2);
 		const low = +(Math.min(open, close) * (1 - Math.random() * 0.015)).toFixed(pair === 'xht-usdt' ? 4 : 2);
-		const volume = +(base * (500 + Math.random() * 5000)).toFixed(pair === 'xht-usdt' ? 1 : 2);
+		const baseVol = pair === 'btc-usdt' ? 2300 : pair === 'eth-usdt' ? 15600 : 236900;
+		const volume = +(baseVol * (0.85 + Math.random() * 0.3)).toFixed(pair === 'xht-usdt' ? 1 : 2);
 		tickers[pair] = { close, open, high, low, volume };
 	});
 	res.json(tickers);
