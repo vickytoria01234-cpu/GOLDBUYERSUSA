@@ -20,6 +20,10 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 10000;
 const HOST = process.env.HOST || '0.0.0.0';
+// Base URL of the static frontend, used to build absolute coin logo URLs so the
+// frontend's generateServerSideDefaultIcons() produces real icon srcs instead of
+// `undefined` (which caused GET /undefined 404).
+const WEB_URL = process.env.WEB_URL || 'https://goldbuyersusa-web.onrender.com';
 
 const app = express();
 app.use(cors());
@@ -68,25 +72,29 @@ const buildKit = () => ({
 	coins: {
 		btc: {
 			symbol: 'btc', fullname: 'Bitcoin', display_name: 'BTC', code: 'btc',
-			increment_unit: 0.0001, min: 0.001, logo: null, type: 'blockchain',
+			increment_unit: 0.0001, min: 0.001, logo: `${WEB_URL}/assets/images/btc-icon.svg`,
+			type: 'blockchain',
 			network: 'btc', allow_deposit: true, allow_withdrawal: true, verified: true,
 			meta: { color: '#F7931A', decimal_points: 8, supply: '21000000' }
 		},
 		eth: {
 			symbol: 'eth', fullname: 'Ethereum', display_name: 'ETH', code: 'eth',
-			increment_unit: 0.0001, min: 0.001, logo: null, type: 'blockchain',
+			increment_unit: 0.0001, min: 0.001, logo: `${WEB_URL}/assets/images/eth-icon.svg`,
+			type: 'blockchain',
 			network: 'eth', allow_deposit: true, allow_withdrawal: true, verified: true,
 			meta: { color: '#627EEA', decimal_points: 18, supply: '120000000' }
 		},
 		usdt: {
 			symbol: 'usdt', fullname: 'Tether', display_name: 'USDT', code: 'usdt',
-			increment_unit: 0.01, min: 0.01, logo: null, type: 'fiat',
+			increment_unit: 0.01, min: 0.01, logo: `${WEB_URL}/assets/images/tusd-icon.svg`,
+			type: 'fiat',
 			network: 'eth', allow_deposit: true, allow_withdrawal: true, verified: true,
 			meta: { color: '#26A17B', decimal_points: 6 }
 		},
 		xht: {
 			symbol: 'xht', fullname: 'Hollaex Token', display_name: 'XHT', code: 'xht',
-			increment_unit: 0.0001, min: 0.001, logo: null, type: 'blockchain',
+			increment_unit: 0.0001, min: 0.001, logo: `${WEB_URL}/assets/images/hollaex-icon-01.svg`,
+			type: 'blockchain',
 			network: 'eth', allow_deposit: true, allow_withdrawal: true, verified: true,
 			meta: { color: '#0066FF', decimal_points: 18, supply: '200000000' }
 		}
@@ -146,15 +154,19 @@ const DEFAULT_CONSTANTS = {
 	coins: {
 		btc: { symbol: 'btc', fullname: 'Bitcoin', display_name: 'BTC', code: 'btc',
 			increment_unit: 0.0001, min: 0.001, type: 'blockchain', allow_deposit: true,
+			logo: `${WEB_URL}/assets/images/btc-icon.svg`,
 			allow_withdrawal: true, verified: true, meta: { color: '#F7931A' } },
 		eth: { symbol: 'eth', fullname: 'Ethereum', display_name: 'ETH', code: 'eth',
 			increment_unit: 0.0001, min: 0.001, type: 'blockchain', allow_deposit: true,
+			logo: `${WEB_URL}/assets/images/eth-icon.svg`,
 			allow_withdrawal: true, verified: true, meta: { color: '#627EEA' } },
 		usdt: { symbol: 'usdt', fullname: 'Tether', display_name: 'USDT', code: 'usdt',
 			increment_unit: 0.01, min: 0.01, type: 'fiat', allow_deposit: true,
+			logo: `${WEB_URL}/assets/images/tusd-icon.svg`,
 			allow_withdrawal: true, verified: true, meta: { color: '#26A17B' } },
 		xht: { symbol: 'xht', fullname: 'Hollaex Token', display_name: 'XHT', code: 'xht',
 			increment_unit: 0.0001, min: 0.001, type: 'blockchain', allow_deposit: true,
+			logo: `${WEB_URL}/assets/images/hollaex-icon-01.svg`,
 			allow_withdrawal: true, verified: true, meta: { color: '#0066FF' } }
 	},
 	pairs: {
@@ -276,6 +288,123 @@ app.get('/v2/minicharts', (req, res) => {
 		result[sym] = points;
 	});
 	res.json(result);
+});
+
+// ----------------------------------------------------------------------------
+// Trading data — orderbook, recent trades, balance, and the TradingView UDF feed.
+// These make the trade view render as a real exchange instead of an empty shell.
+// ----------------------------------------------------------------------------
+const PAIR_BASE_PRICE = { 'btc-usdt': 67500, 'eth-usdt': 3450, 'xht-usdt': 0.211 };
+
+const buildOrderbook = (pair) => {
+	const base = PAIR_BASE_PRICE[pair] || 1;
+	const dp = pair === 'xht-usdt' ? 4 : 2;
+	const asks = [];
+	const bids = [];
+	for (let i = 1; i <= 20; i++) {
+		const askPrice = +(base * (1 + i * 0.0006)).toFixed(dp);
+		const bidPrice = +(base * (1 - i * 0.0006)).toFixed(dp);
+		const size = +(Math.random() * (pair === 'xht-usdt' ? 5000 : 2)).toFixed(4);
+		asks.push([askPrice, size]);
+		bids.push([bidPrice, +(Math.random() * (pair === 'xht-usdt' ? 5000 : 2)).toFixed(4)]);
+	}
+	return { asks, bids, timestamp: new Date().toISOString() };
+};
+
+const buildTrades = (pair) => {
+	const base = PAIR_BASE_PRICE[pair] || 1;
+	const dp = pair === 'xht-usdt' ? 4 : 2;
+	const out = [];
+	for (let i = 0; i < 30; i++) {
+		out.push({
+			size: +(Math.random() * (pair === 'xht-usdt' ? 5000 : 1.5)).toFixed(4),
+			price: +(base * (0.998 + Math.random() * 0.004)).toFixed(dp),
+			side: Math.random() > 0.5 ? 'buy' : 'sell',
+			timestamp: new Date(Date.now() - i * 45000).toISOString()
+		});
+	}
+	return out;
+};
+
+// Orderbook — supports /v2/orderbooks (all pairs) and /v2/orderbook?symbol=btc-usdt.
+app.get('/v2/orderbooks', (req, res) => {
+	const out = {};
+	Object.keys(PAIR_BASE_PRICE).forEach((p) => { out[p] = buildOrderbook(p); });
+	res.json(out);
+});
+
+app.get('/v2/orderbook', (req, res) => {
+	const pair = req.query.symbol || 'btc-usdt';
+	res.json({ [pair]: buildOrderbook(pair) });
+});
+
+// Public recent trades.
+app.get('/v2/trades', (req, res) => {
+	const pair = req.query.symbol;
+	if (pair) return res.json({ [pair]: buildTrades(pair) });
+	const out = {};
+	Object.keys(PAIR_BASE_PRICE).forEach((p) => { out[p] = buildTrades(p); });
+	res.json(out);
+});
+
+// Authenticated user endpoints — empty but correctly shaped.
+app.get('/v2/user/balance', (req, res) => {
+	res.json({
+		btc_balance: 0, btc_available: 0,
+		eth_balance: 0, eth_available: 0,
+		usdt_balance: 0, usdt_available: 0,
+		xht_balance: 0, xht_available: 0,
+		updated_at: new Date().toISOString()
+	});
+});
+
+app.get('/v2/user/trades', (req, res) => { res.json({ count: 0, data: [] }); });
+app.get('/v2/orders', (req, res) => { res.json({ count: 0, data: [] }); });
+app.get('/v2/user/deposits', (req, res) => { res.json({ count: 0, data: [] }); });
+app.get('/v2/user/withdrawals', (req, res) => { res.json({ count: 0, data: [] }); });
+
+// TradingView UDF datafeed (the chart widget calls these).
+app.get('/v2/udf/config', (req, res) => {
+	res.json({
+		supported_resolutions: ['1', '5', '15', '30', '60', '240', '1D', '1W'],
+		supports_group_request: false, supports_marks: false,
+		supports_search: true, supports_timescale_marks: false
+	});
+});
+
+app.get('/v2/udf/symbols', (req, res) => {
+	const symbol = req.query.symbol || 'btc-usdt';
+	res.json({
+		name: symbol, ticker: symbol, description: symbol.toUpperCase(),
+		type: 'crypto', session: '24x7', timezone: 'Etc/UTC',
+		minmov: 1, pricescale: symbol === 'xht-usdt' ? 10000 : 100,
+		has_intraday: true, has_daily: true, has_weekly_and_monthly: true,
+		supported_resolutions: ['1', '5', '15', '30', '60', '240', '1D', '1W'],
+		volume_precision: 4, data_status: 'streaming'
+	});
+});
+
+app.get('/v2/udf/history', (req, res) => {
+	const symbol = req.query.symbol || 'btc-usdt';
+	const base = PAIR_BASE_PRICE[symbol] || 1;
+	const from = parseInt(req.query.from) || Math.floor(Date.now() / 1000) - 86400;
+	const to = parseInt(req.query.to) || Math.floor(Date.now() / 1000);
+	const step = 3600;
+	const t = [], o = [], h = [], l = [], c = [], v = [];
+	let price = base * 0.97;
+	for (let ts = from; ts < to; ts += step) {
+		const open = price;
+		const close = open + (Math.random() - 0.48) * base * 0.02;
+		t.push(ts);
+		o.push(+open.toFixed(4));
+		c.push(+close.toFixed(4));
+		h.push(+(Math.max(open, close) * 1.003).toFixed(4));
+		l.push(+(Math.min(open, close) * 0.997).toFixed(4));
+		v.push(+(Math.random() * 100).toFixed(4));
+		price = close;
+	}
+	if (!t.length) return res.json({ s: 'no_data' });
+	res.json({ s: 'ok', t, o, h, l, c, v });
 });
 
 // User logins (hit by getUserLogins in userAction.js:351; action reads body.data.count directly
